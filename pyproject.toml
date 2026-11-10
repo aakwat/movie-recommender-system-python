@@ -1,0 +1,17 @@
+[project]
+name = "movie-recommender"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "nltk>=3.10.4",
+    "pandas>=3.1.1",
+    "scikit-learn>=1.9.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
