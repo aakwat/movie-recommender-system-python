@@ -112,6 +112,11 @@ a { color: inherit; }
 .t { display: block; margin-top: 0.5rem; font-size: 0.875rem; }
 .y { display: block; color: var(--muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
 
+.row { row-gap: 1.75rem; }
+.rank { margin-right: 0.5rem; color: var(--fg); font-weight: 600; }
+#more { height: 1px; }
+.end { margin: 2rem 0 0; color: var(--muted); font-size: 0.875rem; text-align: center; }
+
 .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .chip {
   min-height: 40px;
@@ -140,7 +145,6 @@ a { color: inherit; }
   .page { padding: 1.25rem 1rem; }
   .top { flex-direction: column; gap: 0.125rem; }
   .row { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-  .row li:last-child { grid-column: 1 / -1; max-width: 50%; justify-self: center; }
 }
 
 /* The shortcut hint is only useful before you are in the box. */

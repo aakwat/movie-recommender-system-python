@@ -1,9 +1,11 @@
-import { fold, search } from "./search.js";
+import { prepare, search } from "./search.js";
 
 const IMAGES = "https://image.tmdb.org/t/p/";
 const SUGGEST = ["The Avengers", "Toy Story", "The Dark Knight", "Inception", "Spirited Away", "The Notebook"];
 // Wait for a short pause in typing before ranking 4,800 titles.
 const TYPING_PAUSE_MS = 120;
+// Two rows of five at a time; more load as the end of the list scrolls into view.
+const PAGE = 10;
 
 const $ = (id) => document.getElementById(id);
 const input = $("q");
@@ -11,9 +13,10 @@ const input = $("q");
 /** @typedef {[id: number, title: string, year: number | null, poster: string | null]} Movie */
 /** @type {{ movies: Movie[], similar: number[][] }} */
 let data;
-/** @type {string[]} */
-let folded = [];
+/** @type {ReturnType<typeof prepare>[]} */
+let prepared = [];
 let current = -1;
+let loaded = 0;
 
 const label = (m) => (m[2] ? `${m[1]} (${m[2]})` : m[1]);
 
@@ -41,15 +44,27 @@ function poster(m) {
   return box;
 }
 
-function card(index) {
+function card(index, rank) {
   const m = data.movies[index];
   const item = el("li");
   const link = el("a", "card");
   link.href = `?m=${m[0]}`;
   link.dataset.index = String(index);
-  link.append(poster(m), el("span", "t", m[1]), el("span", "y", m[2] ? String(m[2]) : ""));
+  const meta = el("span", "y", m[2] ? String(m[2]) : "");
+  link.append(poster(m), el("span", "t", m[1]), meta);
+  meta.prepend(el("span", "rank", String(rank).padStart(2, "0")));
   item.append(link);
   return item;
+}
+
+// Appends the next page of the current film's list, in order of similarity.
+function more() {
+  const all = data.similar[current] ?? [];
+  if (loaded >= all.length) return;
+  const next = all.slice(loaded, loaded + PAGE);
+  $("recs").append(...next.map((index, i) => card(index, loaded + i + 1)));
+  loaded += next.length;
+  $("end").hidden = loaded < all.length;
 }
 
 function setView(view) {
@@ -63,9 +78,11 @@ function show(index, history, fillInput) {
   const m = data.movies[index];
   if (!m) return;
   if (index !== current) {
-    $("because").textContent = `Because you picked ${label(m)}`;
-    $("recs").replaceChildren(...data.similar[index].map(card));
+    $("because").textContent = `Because you picked ${label(m)} · most similar first`;
+    $("recs").replaceChildren();
     current = index;
+    loaded = 0;
+    more();
   }
   setView("result");
   if (fillInput) input.value = m[1];
@@ -84,7 +101,7 @@ function clear() {
 function typed() {
   const text = input.value.trim();
   if (!text) return clear();
-  const [best] = search(folded, text, 1);
+  const [best] = search(prepared, text, 1);
   if (best === undefined) {
     $("nomatch").textContent = `No film matches "${text}".`;
     setView("nomatch");
@@ -133,6 +150,10 @@ function wire() {
     }
   });
   window.addEventListener("popstate", fromUrl);
+  // Loads the next page a little before the bottom is reached.
+  new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && more(), {
+    rootMargin: "600px 0px",
+  }).observe($("more"));
 }
 
 function suggestions() {
@@ -158,7 +179,7 @@ async function main() {
     $("error").hidden = false;
     return;
   }
-  folded = data.movies.map((m) => fold(m[1]));
+  prepared = data.movies.map((m) => prepare(m[1]));
   $("count").textContent = `Content-based recommender · ${data.movies.length.toLocaleString("en")} films`;
   suggestions();
   wire();
