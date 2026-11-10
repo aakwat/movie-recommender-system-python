@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Movies like this · a content-based recommender</title>
+  <meta name="description" content="Pick a film and get five similar ones, from a content-based model over 4,800 movies.">
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <main class="page">
+    <header class="top">
+      <strong>Movies like this</strong>
+      <span id="count">Content-based recommender</span>
+    </header>
+
+    <div class="combo">
+      <label class="visually-hidden" for="q">Type a film title</label>
+      <input id="q" type="search" placeholder="Type a film, e.g. The Dark Knight" autocomplete="off" spellcheck="false">
+      <kbd aria-hidden="true">/</kbd>
+    </div>
+    <p id="nomatch" class="nomatch" hidden></p>
+
+    <section id="result" aria-live="polite">
+      <p class="label" id="because"></p>
+      <ol class="row" id="recs"></ol>
+    </section>
+
+    <section id="empty">
+      <p class="label">Try one of these</p>
+      <div class="chips" id="suggest"></div>
+    </section>
+
+    <p id="error" class="error" hidden>Couldn't load the films. Try again.</p>
+  </main>
+  <footer class="credit">
+    Data and posters from <a href="https://www.themoviedb.org/">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB.
+    · Model and site by <a href="https://me.aungkokolwin.workers.dev">Aung Koko Lwin</a>
+  </footer>
+</body>
+</html>
