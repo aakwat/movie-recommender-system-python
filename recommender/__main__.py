@@ -11,13 +11,14 @@ def main() -> None:
     )
     parser.add_argument("--data", type=Path, default=Path("dataset"))
     parser.add_argument("--out", type=Path, default=Path("site/data/recommendations.json"))
+    parser.add_argument("--top", type=int, default=50, help="similar films kept per movie")
     parser.add_argument(
         "--no-posters", action="store_true", help="skip TMDB; posters stay empty"
     )
     args = parser.parse_args()
 
     movies = dataset.load(args.data)
-    similar = model.similar([m.tags for m in movies])
+    similar = model.similar([m.tags for m in movies], k=args.top)
     found: dict[int, str | None] = {}
     if not args.no_posters:
         key = os.environ.get("TMDB_API_KEY")
