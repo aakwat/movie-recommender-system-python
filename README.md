@@ -1,61 +1,74 @@
-# Movie Recommender System - Python
+# Movie Recommender
 
-![Movie Recommender System](./doc/recommender.png)
+Pick a film and get the 50 most similar ones, ranked by content.
 
-This repository contains a Movie Recommender System implemented in Python, utilizing data from TMDb (The Movie Database). The system aims to provide personalized movie recommendations based on user preferences and historical data.
+Live: <https://movies.aungkokolwin.workers.dev>
 
-## Table of Contents
+## How it works
 
-- [Introduction](#introduction)
-- [Data Source](#data-source)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
+1. **Build (Python, offline).** `python -m recommender` reads the TMDB 5000 dataset, turns each
+   movie's overview, genres, keywords, top cast and director into one stemmed tag string, counts
+   words (scikit-learn `CountVectorizer`, 5000 features) and keeps each film's 50 nearest
+   neighbours by cosine similarity. Posters come from the TMDB API and are cached between runs.
+2. **Site (static).** The result is one JSON file (`site/data/recommendations.json`, about 1.4 MB,
+   640 KB over the wire). The page searches titles in the browser as you type, ignoring
+   punctuation ("spiderman" finds "Spider-Man"), and scrolls through the ranked results.
+3. **Hosting.** Cloudflare static assets only, with no Worker script and no server: free, and
+   nothing to cold-start.
 
-## Introduction
+```
+dataset/*.csv  ->  python -m recommender  ->  site/data/recommendations.json  ->  Cloudflare
+```
 
-A movie recommender system is an application that suggests movies to users based on their past interactions with movies or their preferences. It utilizes various algorithms to analyze user behavior and movie characteristics to generate personalized recommendations.
+## Setup
 
-This project implements a movie recommender system using Python and TMDb's movie dataset. It employs collaborative filtering techniques and content-based filtering to offer users movie suggestions they are likely to enjoy.
+Needs [Nix](https://nixos.org) (or Python 3.14 and [uv](https://docs.astral.sh/uv/) yourself).
 
-## Data Source
+```sh
+nix develop
+uv sync
+```
 
-The dataset used for this project is sourced from TMDb (The Movie Database). TMDb is a popular online database that provides information about movies, TV shows, and celebrities. It offers an API to access its vast collection of movie-related data.
+Download the [TMDB 5000 dataset](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata) and put
+`tmdb_5000_movies.csv` and `tmdb_5000_credits.csv` in `dataset/`.
 
-Please note that you need to obtain an API key and (dataset)[https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata?select=tmdb_5000_movies.csv] from TMDb to access their data. The API key should be kept secure and not shared publicly.
+For posters, put a TMDB API key (v3 "API Key") in `.env`, which git ignores:
 
-## Features
+```sh
+TMDB_API_KEY=your-key-here
+```
 
-The Movie Recommender System offers the following features:
+## Build the data
 
-- Collaborative filtering: Recommends movies based on user-user and item-item similarity.
-- Content-based filtering: Recommends movies similar to those a user has liked based on movie attributes.
-- Personalized recommendations: Tailored movie suggestions based on individual user preferences.
-- Top-rated movies: Provides a list of top-rated movies from the dataset.
+```sh
+uv run --env-file .env python -m recommender
+```
 
-## Installation
+Options: `--top 50` (similar films kept per movie), `--no-posters` (skip TMDB, no key needed),
+`--data` and `--out` for other paths.
 
-To set up the Movie Recommender System on your local machine, follow these steps:
+## Test
 
-1. Clone this repository to your local machine using `git clone https://github.com/alk-neq-me/movie-recommender-system-python.git`.
-2. Navigate to the project directory: `cd movie-recommender-system-python`.
-3. Install the required dependencies: `pip install -r requirements.txt`.
+```sh
+uv run pytest
+node --test tests/*.test.mjs
+```
 
-## Usage
+## Run and deploy
 
-To use the Movie Recommender System, follow these instructions:
+```sh
+npx wrangler dev      # local preview of site/
+npx wrangler deploy   # publish to Cloudflare
+```
 
-1. Obtain a TMDb API key from [TMDb website](https://www.themoviedb.org/documentation/api).
-2. Replace the placeholder for the API key in the `config.py` file with your actual API key.
-3. Prepare the dataset by running the data collection script (if available).
-4. Run the movie recommender system using the [Streamlit](https://discuss.streamlit.io/): `streamlit run app.py`.
+## Layout
 
-## Contributing
-
-Contributions to this movie recommender system are welcome. If you find any issues or have suggestions for improvement, please feel free to open an issue or submit a pull request.
+- `recommender/`: the build: `dataset.py` (load and merge), `features.py` (tags), `model.py`
+  (similarity), `posters.py` (TMDB with a cache), `export.py` (JSON for the site).
+- `site/`: the static page: `index.html`, `app.js`, `search.js`, `style.css`, `_headers`.
+- `tests/`: Python tests for features and model, Node tests for search.
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](https://github.com/alk-neq-me/movie-recommender-system-python/blob/main/LICENSE) file for details.
+MIT, see [LICENSE](LICENSE). Movie data and posters from [TMDB](https://www.themoviedb.org); this
+product uses the TMDB API but is not endorsed or certified by TMDB.
